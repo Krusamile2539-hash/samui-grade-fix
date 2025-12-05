@@ -1,0 +1,5 @@
+{
+  "name": "GradeFix Tracker",
+  "description": "ระบบติดตามการแก้ผลการเรียน (0, ร, มส) สำหรับโรงเรียน เชื่อมต่อข้อมูลระหว่างครูและฝ่ายวัดผล",
+  "requestFramePermissions": []
+}
