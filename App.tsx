@@ -10,7 +10,7 @@ import { ChangePasswordModal } from './components/ChangePasswordModal';
 import { AnimatedBackground } from './components/AnimatedBackground';
 import { LayoutDashboard, GraduationCap, LogOut, PlusCircle, Menu, X, Lock, User as UserIcon, List, Loader2, KeyRound, RefreshCw, Download } from 'lucide-react';
 
-const APP_VERSION = '1.2.0';
+const APP_VERSION = '1.3.0';
 
 // Footer Component
 const DeveloperFooter = () => (
@@ -183,10 +183,18 @@ const App: React.FC = () => {
     }
   };
 
-  const handleUpdateStatus = async (entry: StudentEntry, newStatus: FixStatus, date?: string, note?: string) => {
+  const handleUpdateStatus = async (entry: StudentEntry, newStatus: FixStatus, date?: string, note?: string, newGrade?: string) => {
     const updates: Partial<StudentEntry> = { status: newStatus };
     if (date) updates.resolvedDate = date;
-    if (note) updates.note = note;
+    
+    // We combine newGrade into the update AND optionally into the note for backward compatibility with Sheets that might not have the column
+    if (newGrade) {
+        updates.newGrade = newGrade;
+    }
+    
+    // If there is a note, keep it. If there is a new grade, we might want to ensure it's visible in 'note' column on sheet if no dedicated column exists
+    // But for now, we just save the field.
+    if (note !== undefined) updates.note = note;
 
     setData(prev => prev.map(item => item.id === entry.id ? { ...item, ...updates } : item));
     await updateEntryStatus(entry.id, updates);
@@ -441,7 +449,11 @@ const App: React.FC = () => {
 
         <div className="space-y-6">
           {activeTab === 'dashboard' ? (
-            <Dashboard data={data} />
+            <Dashboard 
+               data={data} 
+               currentUser={currentUser.name}
+               role={currentUser.role}
+            />
           ) : (
             <StudentList 
               entries={data} 

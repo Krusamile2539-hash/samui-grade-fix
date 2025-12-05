@@ -6,7 +6,8 @@ const LOCAL_STORAGE_KEY = 'grade_fix_data_cache';
 
 export const getEntries = async (): Promise<StudentEntry[]> => {
   try {
-    const response = await fetch(API_URL);
+    // Append timestamp to prevent browser caching -> ensures data consistency across devices
+    const response = await fetch(`${API_URL}?t=${new Date().getTime()}`);
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}`);
     }

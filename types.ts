@@ -28,6 +28,7 @@ export interface StudentEntry {
   term: string;
   academicYear: string;
   resolvedDate?: string; // วันที่แก้
+  newGrade?: string;     // เกรดใหม่ที่ได้จากการแก้
   status: FixStatus;
   note?: string; // หมายเหตุ
 }
