@@ -12,7 +12,8 @@ export enum GradeType {
 export enum FixStatus {
   PENDING = 'PENDING',            // รอแก้ไข
   TEACHER_RESOLVED = 'RESOLVED',  // ดำเนินการแก้แล้ว (ครูแจ้ง)
-  ADMIN_RECORDED = 'RECORDED'     // บันทึกเข้าระบบแล้ว (วัดผลยืนยัน)
+  ADMIN_RECORDED = 'RECORDED',     // บันทึกเข้าระบบแล้ว (วัดผลยืนยัน)
+  DELETED = 'DELETED'             // ถูกลบ
 }
 
 export interface StudentEntry {

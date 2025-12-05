@@ -27,46 +27,29 @@ const DeveloperFooter = () => (
 const SchoolLogo = ({ className = "w-20 h-20" }: { className?: string }) => (
   <svg viewBox="0 0 200 200" className={className} xmlns="http://www.w3.org/2000/svg">
     <defs>
-      {/* Top Curve Path: Clockwise arc (Left to Right), Text sits outside (convex) */}
       <path id="topCurve" d="M 25,100 A 75,75 0 0,1 175,100" />
-      
-      {/* Bottom Curve Path: Counter-Clockwise arc (Left to Right), Text sits inside (concave) which makes it readable */}
       <path id="bottomCurve" d="M 12,100 A 88,88 0 0,0 188,100" />
     </defs>
-
-    {/* Outer Ring */}
     <circle cx="100" cy="100" r="98" fill="white" stroke="#2563EB" strokeWidth="3"/>
     <circle cx="100" cy="100" r="68" fill="#EFF6FF" stroke="#2563EB" strokeWidth="1"/>
-    
-    {/* Top Text: โรงเรียนเกาะสมุย */}
     <text fontSize="20" fontWeight="bold" fill="#1e40af" style={{ fontFamily: 'Sarabun, sans-serif' }}>
       <textPath href="#topCurve" startOffset="50%" textAnchor="middle">
         โรงเรียนเกาะสมุย
       </textPath>
     </text>
-    
-    {/* Bottom Text: ระบบติดตามการแก้ผลการเรียน */}
     <text fontSize="14" fontWeight="bold" fill="#1e40af" style={{ fontFamily: 'Sarabun, sans-serif' }} letterSpacing="0.5">
       <textPath href="#bottomCurve" startOffset="50%" textAnchor="middle">
         ระบบติดตามการแก้ผลการเรียน
       </textPath>
     </text>
-    
-    {/* Center Symbol: Stylized Junk Boat (Samphao) - Scaled down to fit inner circle */}
     <g transform="translate(70, 60) scale(0.6)">
-       {/* Sails */}
        <path d="M50 10 L50 85 L10 70 Z" fill="#3B82F6" opacity="0.9"/>
        <path d="M55 5 L55 85 L95 75 Z" fill="#2563EB" />
-       {/* Mast */}
        <path d="M52 5 L52 90" stroke="#1e40af" strokeWidth="2" />
-       {/* Hull */}
        <path d="M10 90 L90 90 L80 115 L20 115 Z" fill="#1e3a8a" />
-       {/* Waves */}
        <path d="M-5 125 Q 25 105 50 125 T 105 125" fill="none" stroke="#60a5fa" strokeWidth="4" strokeLinecap="round" />
        <path d="M10 135 Q 40 120 60 135 T 90 135" fill="none" stroke="#93c5fd" strokeWidth="3" strokeLinecap="round" />
     </g>
-    
-    {/* Decorative Points at sides */}
      <circle cx="18" cy="100" r="3" fill="#1e3a8a" />
      <circle cx="182" cy="100" r="3" fill="#1e3a8a" />
   </svg>
@@ -76,21 +59,19 @@ const App: React.FC = () => {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [data, setData] = useState<StudentEntry[]>([]);
   const [activeTab, setActiveTab] = useState<'dashboard' | 'list'>('dashboard');
+  
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [editingEntry, setEditingEntry] = useState<StudentEntry | undefined>(undefined);
+
   const [isUserListOpen, setIsUserListOpen] = useState(false);
   const [isChangePasswordOpen, setIsChangePasswordOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-
-  // PWA Install State
   const [installPrompt, setInstallPrompt] = useState<any>(null);
-
-  // Login State
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [loginError, setLoginError] = useState('');
 
-  // PWA Install Prompt Listener
   useEffect(() => {
     const handler = (e: any) => {
       e.preventDefault();
@@ -100,7 +81,6 @@ const App: React.FC = () => {
     return () => window.removeEventListener('beforeinstallprompt', handler);
   }, []);
 
-  // Initialize Data
   useEffect(() => {
     const fetchData = async () => {
       setIsLoading(true);
@@ -130,7 +110,6 @@ const App: React.FC = () => {
     e.preventDefault();
     setLoginError('');
 
-    // Check for password override in localStorage
     const storedOverrides = localStorage.getItem('grade_fix_password_overrides');
     const overrides = storedOverrides ? JSON.parse(storedOverrides) : {};
 
@@ -159,7 +138,6 @@ const App: React.FC = () => {
   const handleLogout = () => {
     setCurrentUser(null);
     setIsMobileMenuOpen(false);
-    // Reset login form just in case
     setUsername('');
     setPassword('');
     setLoginError('');
@@ -167,51 +145,70 @@ const App: React.FC = () => {
 
   const handleChangePassword = (oldPwd: string, newPwd: string) => {
     if (!currentUser) return false;
-
-    // Retrieve current stored overrides
     const storedOverrides = localStorage.getItem('grade_fix_password_overrides');
     const overrides = storedOverrides ? JSON.parse(storedOverrides) : {};
-
-    // Determine current effective password
     const userInDb = USERS.find(u => u.username === currentUser.username);
     const currentActualPassword = overrides[currentUser.username] || userInDb?.password;
 
-    // Validate old password
     if (oldPwd !== currentActualPassword) {
       return false;
     }
 
-    // Save new password to overrides
     overrides[currentUser.username] = newPwd;
     localStorage.setItem('grade_fix_password_overrides', JSON.stringify(overrides));
-    
     return true;
   };
 
-  const handleAddEntry = async (newEntryData: any) => {
-    const newEntry: StudentEntry = {
-      ...newEntryData,
-      id: Date.now().toString(), // Client-side ID generation
-    };
-    
-    // Optimistic Update: Update UI immediately
-    setData(prev => [newEntry, ...prev]);
-    setIsAddModalOpen(false);
+  // Add or Edit Entry
+  const handleSaveEntry = async (entryData: any) => {
+    if (editingEntry) {
+       // --- UPDATE EXISTING ---
+       const updatedEntry = { ...entryData };
+       // Optimistic update
+       setData(prev => prev.map(item => item.id === updatedEntry.id ? updatedEntry : item));
+       setIsAddModalOpen(false);
+       setEditingEntry(undefined);
+       // Send to backend (reusing updateEntryStatus which sends partial updates)
+       await updateEntryStatus(updatedEntry.id, updatedEntry);
 
-    // Background Save
-    await saveEntry(newEntry);
+    } else {
+       // --- CREATE NEW ---
+       const newEntry: StudentEntry = {
+        ...entryData,
+        id: Date.now().toString(),
+      };
+      setData(prev => [newEntry, ...prev]);
+      setIsAddModalOpen(false);
+      await saveEntry(newEntry);
+    }
   };
 
   const handleUpdateStatus = async (entry: StudentEntry, newStatus: FixStatus, date?: string, note?: string) => {
-    // Optimistic Update
     const updates: Partial<StudentEntry> = { status: newStatus };
     if (date) updates.resolvedDate = date;
     if (note) updates.note = note;
 
     setData(prev => prev.map(item => item.id === entry.id ? { ...item, ...updates } : item));
-
-    // Background Update
     await updateEntryStatus(entry.id, updates);
+  };
+
+  const handleDeleteEntry = async (entry: StudentEntry) => {
+    if (window.confirm(`ยืนยันการลบข้อมูลของ "${entry.studentName}" หรือไม่?`)) {
+      // Optimistic delete from UI
+      setData(prev => prev.filter(item => item.id !== entry.id));
+      // Update status to DELETED
+      await updateEntryStatus(entry.id, { status: FixStatus.DELETED });
+    }
+  };
+
+  const handleEditEntryClick = (entry: StudentEntry) => {
+    setEditingEntry(entry);
+    setIsAddModalOpen(true);
+  };
+
+  const handleCloseModal = () => {
+    setIsAddModalOpen(false);
+    setEditingEntry(undefined);
   };
 
   if (!currentUser) {
@@ -221,7 +218,6 @@ const App: React.FC = () => {
         
         <div className="flex-1 flex flex-col items-center justify-center w-full max-w-md z-10">
           <div className="bg-white/80 backdrop-blur-xl p-8 rounded-2xl shadow-xl w-full border border-white/50 transition-all duration-300">
-            
             <div className="text-center mb-8">
               <div className="mb-4 drop-shadow-md">
                   <SchoolLogo className="w-28 h-28 mx-auto" />
@@ -279,7 +275,6 @@ const App: React.FC = () => {
                 <List className="w-4 h-4" /> ดูรายชื่อผู้ใช้งาน
               </button>
 
-              {/* Install Button for Login Screen */}
               {installPrompt && (
                 <button
                   onClick={handleInstallClick}
@@ -307,7 +302,6 @@ const App: React.FC = () => {
     <div className="min-h-screen flex flex-col relative text-gray-800">
       <AnimatedBackground />
 
-      {/* Top Navigation */}
       <nav className="bg-white/80 backdrop-blur-md shadow-sm sticky top-0 z-20 border-b border-white/50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between h-16">
@@ -321,7 +315,6 @@ const App: React.FC = () => {
               </div>
             </div>
 
-            {/* Desktop Menu */}
             <div className="hidden md:flex items-center space-x-3">
               {installPrompt && (
                 <button 
@@ -364,7 +357,6 @@ const App: React.FC = () => {
               </button>
             </div>
 
-            {/* Mobile Menu Button */}
             <div className="flex items-center md:hidden gap-2">
               <button 
                 onClick={handleUpdateApp}
@@ -380,7 +372,6 @@ const App: React.FC = () => {
           </div>
         </div>
 
-        {/* Mobile Dropdown */}
         {isMobileMenuOpen && (
           <div className="md:hidden bg-white/95 border-t border-gray-100 p-4 shadow-lg backdrop-blur-md absolute w-full z-50">
              <div className="mb-4 pb-4 border-b border-gray-100">
@@ -416,10 +407,8 @@ const App: React.FC = () => {
         )}
       </nav>
 
-      {/* Main Content */}
       <main className="flex-1 max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-8 z-10">
         
-        {/* Tab Switcher */}
         <div className="flex justify-between items-center mb-6">
           <div className="bg-white/80 backdrop-blur-sm p-1 rounded-xl border border-white/50 inline-flex shadow-sm">
             <button
@@ -441,7 +430,7 @@ const App: React.FC = () => {
             {isLoading && <span className="flex items-center gap-1 text-xs text-blue-600 bg-white/80 px-2 py-1 rounded-full"><Loader2 className="w-3 h-3 animate-spin" /> กำลังโหลด...</span>}
             {currentUser.role === UserRole.TEACHER && (
               <button
-                onClick={() => setIsAddModalOpen(true)}
+                onClick={() => { setEditingEntry(undefined); setIsAddModalOpen(true); }}
                 className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-xl shadow-lg shadow-blue-200 text-sm font-medium flex items-center gap-2 transition-all transform hover:scale-105 active:scale-95"
               >
                 <PlusCircle className="w-4 h-4" /> <span className="hidden sm:inline">แจ้งนักเรียนติด 0/ร/มส</span>
@@ -450,7 +439,6 @@ const App: React.FC = () => {
           </div>
         </div>
 
-        {/* Views */}
         <div className="space-y-6">
           {activeTab === 'dashboard' ? (
             <Dashboard data={data} />
@@ -460,6 +448,8 @@ const App: React.FC = () => {
               role={currentUser.role}
               currentUser={currentUser.name}
               onUpdateStatus={handleUpdateStatus}
+              onDeleteEntry={handleDeleteEntry}
+              onEditEntry={handleEditEntryClick}
             />
           )}
         </div>
@@ -469,9 +459,10 @@ const App: React.FC = () => {
 
       <AddEntryModal 
         isOpen={isAddModalOpen}
-        onClose={() => setIsAddModalOpen(false)}
-        onSave={handleAddEntry}
+        onClose={handleCloseModal}
+        onSave={handleSaveEntry}
         currentUser={currentUser.name}
+        initialData={editingEntry}
       />
       
       <ChangePasswordModal

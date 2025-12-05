@@ -1,21 +1,24 @@
 import React, { useState } from 'react';
 import { StudentEntry, UserRole, FixStatus } from '../types';
 import { StatusBadge } from './StatusBadge';
-import { Search, Filter, Edit3, CheckSquare, Calendar, BookOpen, User, CheckCircle, Download } from 'lucide-react';
+import { Search, Filter, Edit3, CheckSquare, Calendar, BookOpen, Download, Trash2, FileEdit, CheckCircle } from 'lucide-react';
+
 
 interface StudentListProps {
   entries: StudentEntry[];
   role: UserRole;
   onUpdateStatus: (entry: StudentEntry, newStatus: FixStatus, date?: string, note?: string) => void;
+  onDeleteEntry?: (entry: StudentEntry) => void;
+  onEditEntry?: (entry: StudentEntry) => void;
   currentUser: string;
 }
 
-export const StudentList: React.FC<StudentListProps> = ({ entries, role, onUpdateStatus, currentUser }) => {
+export const StudentList: React.FC<StudentListProps> = ({ entries, role, onUpdateStatus, onDeleteEntry, onEditEntry, currentUser }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState<string>('ALL');
   const [editingId, setEditingId] = useState<string | null>(null);
   
-  // Update form state
+  // Update form state (for resolving)
   const [resolveDate, setResolveDate] = useState('');
   const [resolveNote, setResolveNote] = useState('');
 
@@ -27,21 +30,20 @@ export const StudentList: React.FC<StudentListProps> = ({ entries, role, onUpdat
     
     const matchesStatus = filterStatus === 'ALL' || entry.status === filterStatus;
     
-    // Teachers only see their own entries usually, but Admin sees all resolved entries
     const matchesRole = role === UserRole.ADMIN 
-        ? entry.status !== FixStatus.PENDING // Admin sees only what needs recording or is recorded
-        : entry.teacherName === currentUser; // Teacher sees only their students
+        ? entry.status !== FixStatus.PENDING 
+        : entry.teacherName === currentUser;
 
     return matchesSearch && matchesStatus && matchesRole;
   });
 
-  const handleEditClick = (entry: StudentEntry) => {
+  const handleResolveClick = (entry: StudentEntry) => {
     setEditingId(entry.id);
-    setResolveDate(new Date().toISOString().split('T')[0]); // Default today
+    setResolveDate(new Date().toISOString().split('T')[0]); 
     setResolveNote(entry.note || '');
   };
 
-  const handleSaveUpdate = (entry: StudentEntry) => {
+  const handleSaveResolve = (entry: StudentEntry) => {
     if (role === UserRole.TEACHER) {
       onUpdateStatus(entry, FixStatus.TEACHER_RESOLVED, resolveDate, resolveNote);
     } else {
@@ -77,7 +79,6 @@ export const StudentList: React.FC<StudentListProps> = ({ entries, role, onUpdat
       ...rows.map(e => e.join(","))
     ].join("\n");
 
-    // Add BOM for Thai characters support in Excel
     const blob = new Blob(["\uFEFF" + csvContent], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
@@ -131,7 +132,7 @@ export const StudentList: React.FC<StudentListProps> = ({ entries, role, onUpdat
         </div>
       </div>
 
-      {/* Responsive Table/List */}
+      {/* Table */}
       <div className="overflow-x-auto">
         <table className="w-full text-left border-collapse">
           <thead className="bg-gray-50/50 text-gray-600 text-xs uppercase font-semibold">
@@ -157,7 +158,6 @@ export const StudentList: React.FC<StudentListProps> = ({ entries, role, onUpdat
                   <td className="p-4">
                     <div className="font-medium text-gray-900">{entry.studentName}</div>
                     <div className="text-gray-500 text-xs">{entry.studentId}</div>
-                    {/* Mobile Only Details */}
                     <div className="md:hidden text-xs text-gray-500 mt-1">
                       {entry.subject} ({entry.subjectCode})
                     </div>
@@ -206,10 +206,10 @@ export const StudentList: React.FC<StudentListProps> = ({ entries, role, onUpdat
                         )}
                         <div className="flex gap-2 mt-1">
                           <button 
-                            onClick={() => handleSaveUpdate(entry)}
+                            onClick={() => handleSaveResolve(entry)}
                             className="flex-1 bg-green-600 text-white text-xs py-1 px-2 rounded hover:bg-green-700"
                           >
-                            บันทึก
+                            ยืนยัน
                           </button>
                           <button 
                             onClick={() => setEditingId(null)}
@@ -222,16 +222,38 @@ export const StudentList: React.FC<StudentListProps> = ({ entries, role, onUpdat
                     ) : (
                       <div className="flex gap-2">
                         {role === UserRole.TEACHER && entry.status === FixStatus.PENDING && (
-                           <button 
-                             onClick={() => handleEditClick(entry)}
-                             className="flex items-center gap-1 text-blue-600 hover:text-blue-800 text-xs font-medium border border-blue-200 bg-blue-50/50 px-3 py-1.5 rounded-md hover:bg-blue-100 transition-colors"
-                           >
-                             <Edit3 className="w-3 h-3" /> แก้ผลการเรียน
-                           </button>
+                           <>
+                             <button 
+                               onClick={() => handleResolveClick(entry)}
+                               title="แก้ผลการเรียน"
+                               className="flex items-center gap-1 text-blue-600 hover:text-blue-800 text-xs font-medium border border-blue-200 bg-blue-50/50 px-2 py-1.5 rounded-md hover:bg-blue-100 transition-colors"
+                             >
+                               <Edit3 className="w-3 h-3" /> แก้ผล
+                             </button>
+                             
+                             <div className="w-px h-6 bg-gray-200 mx-1"></div>
+
+                             <button
+                               onClick={() => onEditEntry && onEditEntry(entry)}
+                               title="แก้ไขข้อมูลนักเรียน"
+                               className="p-1.5 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded"
+                             >
+                               <FileEdit className="w-4 h-4" />
+
+                             </button>
+                             <button
+                               onClick={() => onDeleteEntry && onDeleteEntry(entry)}
+                               title="ลบรายการ"
+                               className="p-1.5 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded"
+                             >
+                               <Trash2 className="w-4 h-4" />
+                             </button>
+                           </>
                         )}
+
                         {role === UserRole.ADMIN && entry.status === FixStatus.TEACHER_RESOLVED && (
                            <button 
-                             onClick={() => handleSaveUpdate(entry)}
+                             onClick={() => handleSaveResolve(entry)}
                              className="flex items-center gap-1 text-green-600 hover:text-green-800 text-xs font-medium border border-green-200 bg-green-50/50 px-3 py-1.5 rounded-md hover:bg-green-100 transition-colors"
                            >
                              <CheckSquare className="w-3 h-3" /> บันทึกเข้าระบบ

@@ -1,4 +1,4 @@
-import { StudentEntry } from '../types';
+import { StudentEntry, FixStatus } from '../types';
 
 // Google Apps Script Web App URL provided by the user
 const API_URL = 'https://script.google.com/macros/s/AKfycbw8S_I4f7t83NanwKm79OnIJLnS4dirb_44O0egNch5mxxlsnXhoR0OOUoAYSEvuGuw/exec';
@@ -12,9 +12,12 @@ export const getEntries = async (): Promise<StudentEntry[]> => {
     }
     const data = await response.json();
     
+    // Filter out deleted entries
+    const activeData = data.filter((item: StudentEntry) => item.status !== FixStatus.DELETED);
+    
     // Update local cache on successful fetch
-    localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(data));
-    return data;
+    localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(activeData));
+    return activeData;
   } catch (error) {
     // Log as info instead of warning to reduce console noise during development/offline usage
     console.info("Info: Google Sheets API unreachable or not configured, using local offline data.");
@@ -54,7 +57,16 @@ export const updateEntryStatus = async (id: string, updates: Partial<StudentEntr
   const cached = localStorage.getItem(LOCAL_STORAGE_KEY);
   if (cached) {
     const entries = JSON.parse(cached) as StudentEntry[];
-    const updatedEntries = entries.map(e => e.id === id ? { ...e, ...updates } : e);
+    
+    let updatedEntries;
+    if (updates.status === FixStatus.DELETED) {
+       // Filter it out immediately from UI cache
+       updatedEntries = entries.filter(e => e.id !== id);
+    } else {
+       // Update in place
+       updatedEntries = entries.map(e => e.id === id ? { ...e, ...updates } : e);
+    }
+    
     localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(updatedEntries));
   }
 
