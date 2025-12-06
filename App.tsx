@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { UserRole, User, StudentEntry, FixStatus } from './types';
 import { getEntries, saveEntry, updateEntryStatus } from './services/storage';
 import { USERS } from './users';
@@ -8,9 +8,9 @@ import { AddEntryModal } from './components/AddEntryModal';
 import { UserListModal } from './components/UserListModal';
 import { ChangePasswordModal } from './components/ChangePasswordModal';
 import { AnimatedBackground } from './components/AnimatedBackground';
-import { LayoutDashboard, GraduationCap, LogOut, PlusCircle, Menu, X, Lock, User as UserIcon, List, Loader2, KeyRound, RefreshCw, Download } from 'lucide-react';
+import { LayoutDashboard, GraduationCap, LogOut, PlusCircle, Menu, X, Lock, User as UserIcon, List, Loader2, KeyRound, RefreshCw, Download, Wifi } from 'lucide-react';
 
-const APP_VERSION = '1.3.0';
+const APP_VERSION = '1.3.1';
 
 // Footer Component
 const DeveloperFooter = () => (
@@ -67,10 +67,52 @@ const App: React.FC = () => {
   const [isChangePasswordOpen, setIsChangePasswordOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [lastSyncTime, setLastSyncTime] = useState<Date | null>(null);
+  
   const [installPrompt, setInstallPrompt] = useState<any>(null);
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [loginError, setLoginError] = useState('');
+
+  // Function to fetch data with optional background mode (no full loading spinner)
+  const syncData = useCallback(async (isBackground: boolean = false) => {
+    if (!isBackground) setIsLoading(true);
+    try {
+      const entries = await getEntries();
+      setData(entries);
+      setLastSyncTime(new Date());
+    } catch (error) {
+      console.error("Sync failed:", error);
+    } finally {
+      if (!isBackground) setIsLoading(false);
+    }
+  }, []);
+
+  // Effect for Auto-Sync logic
+  useEffect(() => {
+    // 1. Initial Fetch
+    syncData(false);
+
+    // 2. Polling every 30 seconds
+    const intervalId = setInterval(() => {
+      syncData(true);
+    }, 30000);
+
+    // 3. Sync on visibility change (user comes back to tab)
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        syncData(true);
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    window.addEventListener('focus', () => syncData(true));
+
+    return () => {
+      clearInterval(intervalId);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener('focus', () => syncData(true));
+    };
+  }, [syncData]);
 
   useEffect(() => {
     const handler = (e: any) => {
@@ -79,16 +121,6 @@ const App: React.FC = () => {
     };
     window.addEventListener('beforeinstallprompt', handler);
     return () => window.removeEventListener('beforeinstallprompt', handler);
-  }, []);
-
-  useEffect(() => {
-    const fetchData = async () => {
-      setIsLoading(true);
-      const entries = await getEntries();
-      setData(entries);
-      setIsLoading(false);
-    };
-    fetchData();
   }, []);
 
   const handleInstallClick = async () => {
@@ -100,10 +132,8 @@ const App: React.FC = () => {
     }
   };
 
-  const handleUpdateApp = () => {
-    if (window.confirm('ต้องการรีโหลดเพื่ออัปเดตระบบหรือไม่?')) {
-      window.location.reload();
-    }
+  const handleRefreshData = () => {
+    syncData(false);
   };
 
   const handleLoginSubmit = (e: React.FormEvent) => {
@@ -127,6 +157,8 @@ const App: React.FC = () => {
         setActiveTab('dashboard');
         setUsername('');
         setPassword('');
+        // Sync data on login to ensure freshness
+        syncData(false);
       } else {
         setLoginError('ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง');
       }
@@ -170,6 +202,8 @@ const App: React.FC = () => {
        setEditingEntry(undefined);
        // Send to backend (reusing updateEntryStatus which sends partial updates)
        await updateEntryStatus(updatedEntry.id, updatedEntry);
+       // Trigger background sync to confirm
+       setTimeout(() => syncData(true), 1000);
 
     } else {
        // --- CREATE NEW ---
@@ -180,6 +214,8 @@ const App: React.FC = () => {
       setData(prev => [newEntry, ...prev]);
       setIsAddModalOpen(false);
       await saveEntry(newEntry);
+      // Trigger background sync to confirm
+      setTimeout(() => syncData(true), 1000);
     }
   };
 
@@ -187,13 +223,10 @@ const App: React.FC = () => {
     const updates: Partial<StudentEntry> = { status: newStatus };
     if (date) updates.resolvedDate = date;
     
-    // We combine newGrade into the update AND optionally into the note for backward compatibility with Sheets that might not have the column
     if (newGrade) {
         updates.newGrade = newGrade;
     }
     
-    // If there is a note, keep it. If there is a new grade, we might want to ensure it's visible in 'note' column on sheet if no dedicated column exists
-    // But for now, we just save the field.
     if (note !== undefined) updates.note = note;
 
     setData(prev => prev.map(item => item.id === entry.id ? { ...item, ...updates } : item));
@@ -333,21 +366,31 @@ const App: React.FC = () => {
                 </button>
               )}
               
-              <button 
-                onClick={handleUpdateApp}
-                className="flex items-center gap-1 px-3 py-1.5 bg-gray-50 text-gray-600 text-xs font-medium rounded-full hover:bg-gray-100 transition-colors border border-gray-200 mr-2"
-                title="อัปเดตเวอร์ชั่นล่าสุด"
-              >
-                <RefreshCw className="w-4 h-4" /> อัปเดตระบบ
-              </button>
-
-              <div className="text-right mr-2 border-r pr-4 border-gray-200/60">
-                <p className="text-sm font-semibold text-gray-800">{currentUser.name}</p>
-                <p className="text-xs text-gray-500">
-                  {currentUser.role === UserRole.ADMIN ? 'ผู้ดูแลระบบ / ฝ่ายวัดผล' : 'ครูผู้สอน'}
-                </p>
+              <div className="flex flex-col items-end mr-2 px-3 border-r border-gray-200/60">
+                <div className="flex items-center gap-2">
+                  <span className={`w-2 h-2 rounded-full ${isLoading ? 'bg-yellow-400 animate-pulse' : 'bg-green-500'}`}></span>
+                  <p className="text-sm font-semibold text-gray-800">{currentUser.name}</p>
+                </div>
+                <div className="flex items-center gap-1">
+                  <p className="text-xs text-gray-500">
+                    {currentUser.role === UserRole.ADMIN ? 'วัดผล' : 'ครูผู้สอน'}
+                  </p>
+                  {lastSyncTime && (
+                     <span className="text-[10px] text-gray-400 ml-1">
+                       (อัปเดต {lastSyncTime.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' })})
+                     </span>
+                  )}
+                </div>
               </div>
               
+              <button 
+                onClick={handleRefreshData}
+                className="text-gray-500 hover:text-blue-600 transition-colors p-2 hover:bg-blue-50 rounded-full"
+                title="รีเฟรชข้อมูลล่าสุด"
+              >
+                <RefreshCw className={`w-5 h-5 ${isLoading ? 'animate-spin text-blue-600' : ''}`} />
+              </button>
+
               <button 
                 onClick={() => setIsChangePasswordOpen(true)}
                 className="text-gray-500 hover:text-blue-600 transition-colors p-2 hover:bg-blue-50 rounded-full"
@@ -367,11 +410,11 @@ const App: React.FC = () => {
 
             <div className="flex items-center md:hidden gap-2">
               <button 
-                onClick={handleUpdateApp}
+                onClick={handleRefreshData}
                 className="p-2 text-gray-500 bg-gray-50 rounded-full border border-gray-200"
                 title="อัปเดตระบบ"
               >
-                <RefreshCw className="w-4 h-4" />
+                 <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin text-blue-600' : ''}`} />
               </button>
               <button onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)} className="p-2 text-gray-600 hover:bg-gray-100 rounded-lg">
                 {isMobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
@@ -383,12 +426,21 @@ const App: React.FC = () => {
         {isMobileMenuOpen && (
           <div className="md:hidden bg-white/95 border-t border-gray-100 p-4 shadow-lg backdrop-blur-md absolute w-full z-50">
              <div className="mb-4 pb-4 border-b border-gray-100">
-                <p className="font-semibold text-gray-800">{currentUser.name}</p>
-                <p className="text-xs text-gray-500 mb-1">
-                  {currentUser.role === UserRole.ADMIN ? 'ผู้ดูแลระบบ / ฝ่ายวัดผล' : 'ครูผู้สอน'}
-                </p>
-                <div className="inline-block bg-blue-50 text-blue-600 text-[10px] px-2 py-0.5 rounded-full font-medium">
-                  v{APP_VERSION}
+                <div className="flex justify-between items-start">
+                  <div>
+                    <p className="font-semibold text-gray-800">{currentUser.name}</p>
+                    <p className="text-xs text-gray-500 mb-1">
+                      {currentUser.role === UserRole.ADMIN ? 'ผู้ดูแลระบบ / ฝ่ายวัดผล' : 'ครูผู้สอน'}
+                    </p>
+                  </div>
+                  {lastSyncTime && (
+                    <div className="text-right">
+                       <span className="text-[10px] bg-green-50 text-green-700 px-2 py-0.5 rounded-full border border-green-100 flex items-center gap-1">
+                         <Wifi className="w-3 h-3" /> ออนไลน์
+                       </span>
+                       <p className="text-[10px] text-gray-400 mt-1">อัปเดต {lastSyncTime.toLocaleTimeString('th-TH')}</p>
+                    </div>
+                  )}
                 </div>
              </div>
              
@@ -435,7 +487,7 @@ const App: React.FC = () => {
           </div>
 
           <div className="flex items-center gap-2">
-            {isLoading && <span className="flex items-center gap-1 text-xs text-blue-600 bg-white/80 px-2 py-1 rounded-full"><Loader2 className="w-3 h-3 animate-spin" /> กำลังโหลด...</span>}
+            {isLoading && activeTab === 'list' && <span className="flex items-center gap-1 text-xs text-blue-600 bg-white/80 px-2 py-1 rounded-full"><Loader2 className="w-3 h-3 animate-spin" /> กำลังซิงค์...</span>}
             {currentUser.role === UserRole.TEACHER && (
               <button
                 onClick={() => { setEditingEntry(undefined); setIsAddModalOpen(true); }}

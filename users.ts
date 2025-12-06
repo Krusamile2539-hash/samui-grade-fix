@@ -7,7 +7,8 @@ export interface UserAccount {
   role: UserRole;
 }
 
-export const USERS: UserAccount[] = [
+// 1. รายชื่อครูที่มีการระบุชื่อจริง (Named Users)
+const NAMED_USERS: UserAccount[] = [
   { username: 't11', password: 'password', name: 'สาวนิลดา ชูพันธ์', role: UserRole.TEACHER },
   { username: 't12', password: 'password', name: 'สาวศิวพร รักไทรทอง', role: UserRole.TEACHER },
   { username: 't13', password: 'password', name: 'สาวนาวาล มะ', role: UserRole.TEACHER },
@@ -55,33 +56,43 @@ export const USERS: UserAccount[] = [
   { username: 't64', password: 'password', name: 'เตชสิทธิ์ ศรีสุเมธารัส', role: UserRole.TEACHER },
   { username: 't65', password: 'password', name: 'เยาวรัตน์ ประสานเชื้อ', role: UserRole.TEACHER },
   { username: 't66', password: 'password', name: 'ปริญญา คานทอง', role: UserRole.TEACHER },
-  { username: 'teacher1', password: 'password', name: 'สาวสุวีรยา พันธ์ฤทธิ์', role: UserRole.TEACHER },
-  { username: 'teacher2', password: 'password', name: 'สาวณัฐนันท์ ขุนพล', role: UserRole.TEACHER },
-  { username: 'teacher3', password: 'password', name: 'สาวกานต์ธิดา แก้วจันทร์', role: UserRole.TEACHER },
-  { username: 'teacher4', password: 'password', name: 'สาวปัญญารัตน์ คงแก้ว', role: UserRole.TEACHER },
-  { username: 'teacher5', password: 'password', name: 'รัชชานนท์ สุขสวัสดิ์', role: UserRole.TEACHER },
-  { username: 'teacher6', password: 'password', name: 'สาวเมธีนันท์ ด่วนเดิน', role: UserRole.TEACHER },
-  { username: 'teacher7', password: 'password', name: 'ณัฐภัทร ภัทรชนม์', role: UserRole.TEACHER },
-  { username: 'teacher8', password: 'password', name: 'สาวรัตน์ชนก พื้นปูม', role: UserRole.TEACHER },
-  { username: 'teacher9', password: 'password', name: 'อัครพล ศรีฟ้า', role: UserRole.TEACHER },
-  { username: 'teacher10', password: 'password', name: 'สาวพัชรินทร์ จิตติศักดิ์', role: UserRole.TEACHER },
-  { username: 'teacher11', password: 'password', name: 'สุทธินันท์ ศรีสุจริต', role: UserRole.TEACHER },
-  { username: 'teacher12', password: 'password', name: 'ปฐม ชัยชนะ', role: UserRole.TEACHER },
-  { username: 'teacher13', password: 'password', name: 'ภวิษ อิสาเฮาะ', role: UserRole.TEACHER },
-  { username: 'teacher14', password: 'password', name: 'สาวพิกุลแก้ว ห้องแซง', role: UserRole.TEACHER },
-  { username: 'teacher15', password: 'password', name: 'สาวอิสริยาภรณ์ จิตรมุ่ง', role: UserRole.TEACHER },
-  { username: 'Phanuwat39', password: 'phanuwat39', name: 'ภานุวัฒน์ ทองจันทร์', role: UserRole.ADMIN }, // ผู้พัฒนาระบบ
-  { username: 'teacher17', password: 'password', name: 'สาวขวัญชนก เจริญผล', role: UserRole.TEACHER },
-  { username: 'teacher18', password: 'password', name: 'เรืองศักดิ์ ชื่นโคกกรวด', role: UserRole.TEACHER },
-  { username: 'teacher19', password: 'password', name: 'ธนกฤต สุขเกษม', role: UserRole.TEACHER },
-  { username: 'teacher20', password: 'password', name: 'พชรพล รักการงาน', role: UserRole.TEACHER },
-  { username: 'teacher21', password: 'password', name: 'ชาญ วิทย์ สังข์ ชื่อ', role: UserRole.TEACHER },
-  { username: 'teacher22', password: 'password', name: 'สาวกันยณา คงทอง', role: UserRole.TEACHER },
-  { username: 'teacher23', password: 'password', name: 'ภิญญาพัชญ์ ปัทมากร', role: UserRole.TEACHER },
-  { username: 'teacher24', password: 'password', name: 'ศศิธร สโมสร', role: UserRole.TEACHER },
-  { username: 'teacher25', password: 'password', name: 'สาวมลฤดี ปานเปีย', role: UserRole.TEACHER },
-  { username: 'teacher26', password: 'password', name: 'สาวณิชวรรณ ราษฎร์เจริญ', role: UserRole.TEACHER },
-  // บัญชีเพิ่มเติมสำหรับใช้งานในฐานะครูผู้สอน
+  { username: 'Phanuwat39', password: 'phanuwat39', name: 'ภานุวัฒน์ ทองจันทร์', role: UserRole.ADMIN },
   { username: 't28_user', password: 'password', name: 'สาวจิราภรณ์ มูลี', role: UserRole.TEACHER },
   { username: 'Phanuwat_user', password: 'password', name: 'ภานุวัฒน์ ทองจันทร์', role: UserRole.TEACHER },
 ];
+
+// 2. ฟังก์ชันสร้าง User อัตโนมัติให้ครอบคลุม t1 - t120 เพื่อรองรับครู 100+ ท่าน
+const generateAllUsers = (): UserAccount[] => {
+  const users = [...NAMED_USERS];
+  const existingUsernames = new Set(users.map(u => u.username));
+
+  // สร้าง t1 ถึง t120
+  for (let i = 1; i <= 120; i++) {
+    const username = `t${i}`;
+    if (!existingUsernames.has(username)) {
+      users.push({
+        username: username,
+        password: 'password',
+        name: `ครูรหัส ${username}`, // ชื่อชั่วคราว
+        role: UserRole.TEACHER
+      });
+    }
+  }
+
+  // สร้าง teacher1 ถึง teacher30 (Backup)
+  for (let i = 1; i <= 30; i++) {
+    const username = `teacher${i}`;
+    if (!existingUsernames.has(username)) {
+      users.push({
+        username: username,
+        password: 'password',
+        name: `ครู ${username}`,
+        role: UserRole.TEACHER
+      });
+    }
+  }
+
+  return users;
+};
+
+export const USERS: UserAccount[] = generateAllUsers();

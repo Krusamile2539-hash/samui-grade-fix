@@ -1,4 +1,4 @@
-const CACHE_NAME = 'grade-fix-v1.2.0';
+const CACHE_NAME = 'grade-fix-v1.3.1';
 const URLS_TO_CACHE = [
   '/',
   '/index.html',
