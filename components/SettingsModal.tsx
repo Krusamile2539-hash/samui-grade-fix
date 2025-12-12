@@ -30,22 +30,33 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, o
     setError('');
 
     try {
-      // พยายามทำความสะอาด input (เผื่อ user ก๊อปปี้มาทั้ง const firebaseConfig = ...)
-      let cleanedInput = configInput.trim();
+      let text = configInput.trim();
       
-      // ลบตัวแปรนำหน้าถ้ามี
-      if (cleanedInput.includes('=')) {
-        cleanedInput = cleanedInput.split('=')[1];
+      // 1. ลบส่วนประกาศตัวแปร (const firebaseConfig = ...) และ ; ท้ายสุด
+      if (text.includes('=')) {
+        text = text.substring(text.indexOf('=') + 1).trim();
       }
-      // ลบ semicolon ท้ายถ้ามี
-      if (cleanedInput.endsWith(';')) {
-        cleanedInput = cleanedInput.slice(0, -1);
+      if (text.endsWith(';')) {
+        text = text.slice(0, -1).trim();
       }
 
-      // แปลง key ที่ไม่มี quote ให้มี quote (แบบง่ายๆ)
-      cleanedInput = cleanedInput.replace(/(\w+):/g, '"$1":').replace(/'/g, '"');
+      // 2. แปลง Single Quote เป็น Double Quote
+      text = text.replace(/'/g, '"');
 
-      const configObj = JSON.parse(cleanedInput);
+      // 3. ใส่ Quote ให้ Key ที่ยังไม่มี (รองรับ JS Object Syntax)
+      // Regex: หาคำ (word) ที่ตามด้วย : โดยที่ข้างหน้าต้องไม่ใช่เครื่องหมายคำพูด
+      text = text.replace(/(\s*?)(['"])?([a-zA-Z0-9_]+)(['"])?(\s*):/g, (match, prefix, q1, key, q2, suffix) => {
+        // ถ้ามี quote อยู่แล้ว (q1 หรือ q2) ให้คืนค่าเดิม
+        if (q1 || q2) return match;
+        // ถ้าไม่มี ให้ใส่ quote ครอบ key
+        return `${prefix}"${key}"${suffix}:`;
+      });
+
+      // 4. ลบ Trailing Comma (ลูกน้ำตัวสุดท้ายก่อนปิดปีกกา) ซึ่ง JSON ไม่รองรับ
+      text = text.replace(/,(\s*})/g, '$1');
+
+      // ลอง Parse JSON
+      const configObj = JSON.parse(text);
 
       if (!configObj.apiKey || !configObj.projectId) {
         throw new Error("ข้อมูลไม่ครบถ้วน (ต้องมี apiKey และ projectId)");
@@ -55,7 +66,8 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, o
       onSave();
       onClose();
     } catch (err: any) {
-      setError('รูปแบบข้อมูลไม่ถูกต้อง: ' + err.message);
+      console.error("Config Parsing Error:", err);
+      setError('รูปแบบข้อมูลไม่ถูกต้อง: ' + err.message + '\n(กรุณาตรวจสอบว่าก็อปปี้มาครบถ้วนหรือไม่)');
     }
   };
 
@@ -93,7 +105,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, o
                 <li>สร้าง <b>Firestore Database</b> (เลือก start in production mode)</li>
                 <li>ไปที่ <b>Project Settings</b> {'>'} เลื่อนลงมาที่ <b>Your apps</b></li>
                 <li>เลือก Web app ({'</>'}) และคัดลอกส่วนที่เป็น <code>const firebaseConfig = {'{...}'};</code></li>
-                <li>นำเฉพาะส่วนในวงเล็บปีกกา <code>{'{...}'}</code> มาวางในช่องด้านล่าง</li>
+                <li>นำเฉพาะส่วนในวงเล็บปีกกา <code>{'{...}'}</code> มาวางในช่องด้านล่าง (วางทั้ง const ก็ได้ ระบบจะตัดให้อัตโนมัติ)</li>
             </ol>
           </div>
 
@@ -106,16 +118,16 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, o
                     className="w-full border border-gray-300 rounded-md px-3 py-2 text-xs font-mono h-48 focus:ring-2 focus:ring-orange-500 outline-none text-gray-600"
                     value={configInput}
                     onChange={e => setConfigInput(e.target.value)}
-                    placeholder={`{
-  "apiKey": "AIzaSy...",
-  "authDomain": "project-id.firebaseapp.com",
-  "projectId": "project-id",
-  "storageBucket": "project-id.firebasestorage.app",
-  "messagingSenderId": "...",
-  "appId": "..."
-}`}
+                    placeholder={`const firebaseConfig = {
+  apiKey: "AIzaSy...",
+  authDomain: "project-id.firebaseapp.com",
+  projectId: "project-id",
+  storageBucket: "project-id.firebasestorage.app",
+  messagingSenderId: "...",
+  appId: "..."
+};`}
                 />
-                {error && <p className="text-xs text-red-500 mt-2 font-medium bg-red-50 p-2 rounded">{error}</p>}
+                {error && <p className="text-xs text-red-500 mt-2 font-medium bg-red-50 p-2 rounded whitespace-pre-wrap">{error}</p>}
             </div>
             
             <div className="pt-4 flex justify-between items-center">
