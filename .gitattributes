@@ -1,0 +1,25 @@
+# Set the default behavior, in case people don't have core.autocrlf set.
+* text=auto
+
+#
+# The above will handle all files NOT found below
+#
+# These files are text and should be normalized (Convert CRLF to LF)
+*.css text
+*.html text
+*.js text
+*.json text
+*.jsx text
+*.md text
+*.scss text
+*.ts text
+*.tsx text
+
+# These files are binary and should be left untouched
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+# Cache directories
+.cache/
