@@ -1,6 +1,6 @@
 import { initializeApp } from 'firebase/app';
 import { getFirestore, Firestore } from 'firebase/firestore';
-import { FirebaseConfig } from '../models';
+import { FirebaseConfig } from '../models.ts';
 
 const CONFIG_KEY = 'grade_fix_firebase_config';
 
