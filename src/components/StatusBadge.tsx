@@ -1,5 +1,5 @@
 import React from 'react';
-import { FixStatus } from '../models';
+import { FixStatus } from '../models.ts';
 
 export const StatusBadge: React.FC<{ status: FixStatus }> = ({ status }) => {
   switch (status) {
