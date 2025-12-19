@@ -3,23 +3,23 @@ import { db } from "./firebase";
 
 function App() {
 
-  const saveData = async () => {
+  const saveFixGrade = async () => {
     try {
-      await addDoc(collection(db, "grade_fix"), {
+      await addDoc(collection(db, "gradeFix"), {
         studentName: "ทดสอบ",
         subject: "สังคมศึกษา",
-        updatedAt: new Date()
+        createdAt: new Date()
       });
       alert("บันทึกข้อมูลสำเร็จ");
     } catch (err) {
-      console.error("บันทึกข้อมูลไม่ได้", err);
+      console.error("บันทึกไม่สำเร็จ", err);
     }
   };
 
   return (
     <div className="p-4">
       <button
-        onClick={saveData}
+        onClick={saveFixGrade}
         className="bg-blue-600 text-white px-4 py-2 rounded"
       >
         บันทึกข้อมูล
