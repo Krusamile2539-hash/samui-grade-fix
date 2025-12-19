@@ -3,13 +3,12 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-
     <title>ระบบติดตามการแก้ผลการเรียนโรงเรียนเกาะสมุย</title>
 
-    <!-- PWA Manifest -->
+    <!-- PWA -->
     <link rel="manifest" href="/manifest.json" />
 
-    <!-- Tailwind (CDN – ใช้ได้ ปล่อย warning ได้) -->
+    <!-- Tailwind CDN (warning ปล่อยได้) -->
     <script src="https://cdn.tailwindcss.com"></script>
 
     <!-- Google Font -->
@@ -47,12 +46,10 @@
   </head>
 
   <body>
-    <!-- React Mount Point -->
     <div id="root"></div>
 
-    <!-- ❗ สำคัญมาก: ให้ Vite inject JS เอง -->
-    <!-- ❌ ห้ามใส่ <script src="/index.tsx"> -->
-    <!-- ❌ ห้ามใช้ importmap -->
+    <!-- ✅ สำคัญ: React entry ของโปรเจกต์คุณ -->
+    <script type="module" src="/index.tsx"></script>
 
     <!-- Service Worker -->
     <script>
@@ -60,12 +57,8 @@
         window.addEventListener('load', () => {
           navigator.serviceWorker
             .register('/sw.js')
-            .then((registration) => {
-              console.log('SW registered:', registration);
-            })
-            .catch((error) => {
-              console.log('SW registration failed:', error);
-            });
+            .then((reg) => console.log('SW registered:', reg))
+            .catch((err) => console.log('SW registration failed:', err));
         });
       }
     </script>
