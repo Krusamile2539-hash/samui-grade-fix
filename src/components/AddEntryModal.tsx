@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { GradeType, StudentEntry } from '../models';
+import { StudentEntry } from '../models.ts';
 import { X, Save, Upload, Edit3, Loader2 } from 'lucide-react';
 import * as mammoth from 'mammoth';
 import { Document, Packer, Paragraph, Table, TableCell, TableRow, WidthType, TextRun, AlignmentType } from 'docx';
