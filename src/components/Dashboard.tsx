@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { StudentEntry, FixStatus, GradeType, UserRole } from '../models';
+import { StudentEntry, FixStatus, GradeType, UserRole } from '../models.ts';
 import { StatsCard } from './StatsCard';
 import { PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, Legend } from 'recharts';
 import { Users, AlertCircle, CheckCircle, FileCheck, User } from 'lucide-react';
