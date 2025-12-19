@@ -1,4 +1,4 @@
-import { StudentEntry, FixStatus } from '../models';
+import { StudentEntry, FixStatus } from '../models.ts';
 import { db } from './firebase';
 import { collection, getDocs, doc, setDoc, updateDoc } from 'firebase/firestore';
 
