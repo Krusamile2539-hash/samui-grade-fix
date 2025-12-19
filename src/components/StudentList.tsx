@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { StudentEntry, UserRole, FixStatus } from '../models';
+import { StudentEntry, UserRole, FixStatus } from '../models.ts';
 import { StatusBadge } from './StatusBadge';
 import { Search, Filter, Edit3, CheckSquare, Calendar, BookOpen, Download, Trash2, Edit, CheckCircle, ArrowRight } from 'lucide-react';
 
