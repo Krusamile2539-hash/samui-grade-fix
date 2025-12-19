@@ -1,31 +1,16 @@
-import { collection, addDoc } from "firebase/firestore";
-import { db } from "./firebase";
+import React from 'react';
+import ReactDOM from 'react-dom/client';
+import App from './App';
 
-function App() {
+// ผูก React เข้ากับ div#root ใน index.html
+const rootElement = document.getElementById('root');
 
-  const saveFixGrade = async () => {
-    try {
-      await addDoc(collection(db, "gradeFix"), {
-        studentName: "ทดสอบ",
-        subject: "สังคมศึกษา",
-        createdAt: new Date()
-      });
-      alert("บันทึกข้อมูลสำเร็จ");
-    } catch (err) {
-      console.error("บันทึกไม่สำเร็จ", err);
-    }
-  };
-
-  return (
-    <div className="p-4">
-      <button
-        onClick={saveFixGrade}
-        className="bg-blue-600 text-white px-4 py-2 rounded"
-      >
-        บันทึกข้อมูล
-      </button>
-    </div>
-  );
+if (!rootElement) {
+  throw new Error('ไม่พบ element id="root"');
 }
 
-export default App;
+ReactDOM.createRoot(rootElement).render(
+  <React.StrictMode>
+    <App />
+  </React.StrictMode>
+);
