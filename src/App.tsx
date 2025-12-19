@@ -1,7 +1,7 @@
 // ✅ App.tsx (FIXED – READY TO USE)
 
-import React, { useState, useEffect, useCallback } from 'react';
-import { UserRole, User, StudentEntry, FixStatus } from './models';
+import { UserRole, User, StudentEntry, FixStatus } from './models.ts';
+import { USERS } from './users.ts';
 import {
   getEntries,
   saveEntry,
