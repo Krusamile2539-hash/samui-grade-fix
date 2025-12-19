@@ -1,7 +1,7 @@
 import React from 'react';
 import { X, User, Shield, GraduationCap, Users } from 'lucide-react';
-import { USERS, UserAccount } from '../users';
-import { UserRole } from '../models';
+import { USERS, UserAccount } from '../users.ts';
+import { UserRole } from '../models.ts';
 
 interface UserListModalProps {
   isOpen: boolean;
