@@ -1,15 +1,13 @@
-// src/models.ts
-
 export enum UserRole {
   ADMIN = 'ADMIN',
-  TEACHER = 'TEACHER'
+  TEACHER = 'TEACHER',
 }
 
 export enum FixStatus {
   PENDING = 'PENDING',
   APPROVED = 'APPROVED',
   REJECTED = 'REJECTED',
-  DELETED = 'DELETED'
+  DELETED = 'DELETED',
 }
 
 export interface User {
