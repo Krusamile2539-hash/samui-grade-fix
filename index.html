@@ -2,39 +2,16 @@
 <html lang="th">
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>ระบบติดตามการแก้ผลการเรียนโรงเรียนเกาะสมุย</title>
 
-    <!-- PWA -->
     <link rel="manifest" href="/manifest.json" />
 
-    <!-- Tailwind CDN (warning ปล่อยได้) -->
     <script src="https://cdn.tailwindcss.com"></script>
-
-    <!-- Google Font -->
     <link
       href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap"
       rel="stylesheet"
     />
-
-    <script>
-      tailwind.config = {
-        theme: {
-          extend: {
-            fontFamily: {
-              sans: ['Sarabun', 'sans-serif'],
-            },
-            colors: {
-              primary: '#2563EB',
-              secondary: '#475569',
-              success: '#10B981',
-              warning: '#F59E0B',
-              danger: '#EF4444',
-            },
-          },
-        },
-      };
-    </script>
 
     <style>
       body {
@@ -48,18 +25,12 @@
   <body>
     <div id="root"></div>
 
-    <!-- ✅ สำคัญ: React entry ของโปรเจกต์คุณ -->
-    <script type="module" src="/index.tsx"></script>
+    <!-- ✅ entry ของ Vite -->
+    <script type="module" src="/src/main.tsx"></script>
 
-    <!-- Service Worker -->
     <script>
       if ('serviceWorker' in navigator) {
-        window.addEventListener('load', () => {
-          navigator.serviceWorker
-            .register('/sw.js')
-            .then((reg) => console.log('SW registered:', reg))
-            .catch((err) => console.log('SW registration failed:', err));
-        });
+        navigator.serviceWorker.register('/sw.js');
       }
     </script>
   </body>
